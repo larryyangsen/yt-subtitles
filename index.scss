@@ -7,7 +7,7 @@
 
     header {
         width: 50%;
-        margin-top: 8px;
+        margin: 8px;
         display: flex;
         justify-content: center;
 
@@ -16,38 +16,7 @@
             padding: 8px;
             border: 2px solid #fedcba;
         }
-
     }
-
-    .subtitles {
-        width: 100%;
-        display: flex;
-
-        .vtt-list,
-        .vtt {
-            height: 40vh;
-            overflow: auto;
-            margin-top: 8px;
-
-            .cue {
-                background-color: #aaa;
-
-                &.highlight {
-                    color: #f00
-                }
-            }
-        }
-
-        .vtt-list {
-            flex: 1;
-        }
-
-        .vtt {
-            flex: 2;
-        }
-    }
-
-
 
     .video {
         height: 40vh;
@@ -58,6 +27,47 @@
             height: 100%;
         }
     }
+
+    .subtitles {
+        width: 80%;
+        display: flex;
+        margin-top: 8px;
+        flex-direction: column;
+        align-content: center;
+
+        .vtt-selector {
+            display: flex;
+            justify-content: center;
+
+            select {
+                margin-left: 8px;
+                min-width: 20%
+            }
+        }
+
+        .vtts {
+            display: flex;
+            justify-content: center;
+
+            .vtt {
+                height: 40vh;
+                overflow: auto;
+                margin: 8px;
+
+                .cue {
+
+                    &.highlight {
+                        color: #a04;
+                        font-size: 3rem;
+                        padding: 4rem;
+                    }
+                }
+            }
+        }
+
+    }
+
+
 
 
 }

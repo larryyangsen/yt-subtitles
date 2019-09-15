@@ -3,7 +3,6 @@ const httpStatus = require('http-status');
 const express = require('express');
 const bodyParser = require('body-parser');
 const Path = require('path');
-const Bundler = require('parcel-bundler');
 const { getVttList, getVideoFileName } = require('./youtube');
 const isDev = process.env.NODE_ENV === 'dev';
 const app = express();
@@ -43,6 +42,7 @@ app.post('/vtt', (req, res) => {
 });
 
 if (isDev) {
+    const Bundler = require('parcel-bundler');
     const entryFiles = Path.join(__dirname, './index.html');
     const bundler = new Bundler(entryFiles);
     app.use(bundler.middleware());

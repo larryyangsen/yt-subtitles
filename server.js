@@ -54,11 +54,12 @@ if (isDev) {
     });
 } else {
     const entryFiles = Path.join(__dirname, '/public');
+    const PORT = process.env.PORT || 8080;
     app.use(express.static(entryFiles));
-    app.listen(8080, err => {
+    app.listen(PORT, err => {
         if (err) {
             console.error(err);
         }
-        console.log('listen on', 8080);
+        console.log('listen on', PORT);
     });
 }

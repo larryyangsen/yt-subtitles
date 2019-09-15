@@ -55,10 +55,10 @@ if (isDev) {
 } else {
     const entryFiles = Path.join(__dirname, '/public');
     app.use(express.static(entryFiles));
-    app.listen(8888, err => {
+    app.listen(8080, err => {
         if (err) {
             console.error(err);
         }
-        console.log('listen on', 8888);
+        console.log('listen on', 8080);
     });
 }

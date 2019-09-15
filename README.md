@@ -10,3 +10,16 @@
 -   npm run build
 -   npm start
 -   open http://localhost:8888
+
+## stacks
+
+-   backend
+
+    -   express
+    -   youtube-dl
+
+-   frontend
+    -   react
+    -   axios
+-   builder
+    -   parcel-bundler

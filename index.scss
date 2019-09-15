@@ -50,16 +50,18 @@
             justify-content: center;
 
             .vtt {
-                height: 40vh;
-                overflow: auto;
+                height: 50vh;
+                overflow: hidden;
                 margin: 8px;
+                width: 50%;
 
                 .cue {
+                    font-size: 1.5rem;
+                    padding: 4rem 0;
 
                     &.highlight {
-                        color: #a04;
+                        color: rgb(21, 50, 212);
                         font-size: 3rem;
-                        padding: 4rem;
                     }
                 }
             }

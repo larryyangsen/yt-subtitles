@@ -8,11 +8,11 @@ const parseVideoUrl = window.location.origin + '/parse-video';
 const videoUrl = window.location.origin + '/video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
 
-const VttSelector = ({ vttFiles, fileName, onVttChange }) => (
+const VttSelector = ({ vttFiles, videoId, onVttChange }) => (
     <select onChange={e => onVttChange(e)}>
         {vttFiles.map((vtt, i) => (
             <option key={i} value={vtt}>
-                {vtt.split(fileName.replace('.mp4', '') + '.')[1]}
+                {vtt.split(videoId + '.')[1].replace('.vtt', '')}
             </option>
         ))}
     </select>
@@ -34,7 +34,7 @@ const App = () => {
     const [leftCues, setLeftCues] = useState([]);
     const [rightCues, setRightCues] = useState([]);
     const [url, setUrl] = useState(defaultUrl);
-    const videoFileName = useRef('');
+    const videoId = useRef('');
     const Video = useRef();
     const [leftHighlightedIndex, setLeftHighlightedIndex] = useState(-1);
     const [rightHighlightedIndex, setRightHighlightedIndex] = useState(-1);
@@ -42,20 +42,21 @@ const App = () => {
     const parseVideo = async () => {
         Video.current.src = '';
 
-        videoFileName.current = '';
+        videoId.current = '';
         const {
-            data: { fileName, vttFiles }
+            data: { display_id, download_url, vttFiles }
         } = await axios.post(parseVideoUrl, {
             url
         });
         if (vttFiles.length) {
             setVttFiles(vttFiles);
-            videoFileName.current = fileName;
+            videoId.current = display_id;
             const cues = await parseVtt(vttFiles[0]);
+
             setLeftCues(cues);
             setRightCues(cues);
         }
-        Video.current.src = `${videoUrl}/${fileName}`;
+        Video.current.src = download_url;
     };
 
     const onUrlChanged = e => {
@@ -125,17 +126,17 @@ const App = () => {
                 <video ref={Video} controls autoPlay />
             </div>
             <div className="subtitles">
-                {vttFiles.length > 0 && videoFileName.current && (
+                {vttFiles.length > 1 && videoId.current && (
                     <div className="vtt-selector">
                         <VttSelector
                             vttFiles={vttFiles}
                             onVttChange={e => onVttChange(e, 'left')}
-                            fileName={videoFileName.current}
+                            videoId={videoId.current}
                         />
                         <VttSelector
                             vttFiles={vttFiles}
                             onVttChange={e => onVttChange(e, 'right')}
-                            fileName={videoFileName.current}
+                            videoId={videoId.current}
                         />
                     </div>
                 )}
@@ -148,14 +149,16 @@ const App = () => {
                             side="left"
                         />
                     </div>
-                    <div className="vtt">
-                        <Cues
-                            curHighlightedIndex={rightHighlightedIndex}
-                            cues={rightCues}
-                            onCueClick={onCueClick}
-                            side="right"
-                        />
-                    </div>
+                    {vttFiles.length > 1 && (
+                        <div className="vtt">
+                            <Cues
+                                curHighlightedIndex={rightHighlightedIndex}
+                                cues={rightCues}
+                                onCueClick={onCueClick}
+                                side="right"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

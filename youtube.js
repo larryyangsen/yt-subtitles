@@ -8,11 +8,8 @@ const vttOptions = {
     format: 'vtt',
     cwd: __dirname + '/vtt'
 };
-const videoOptions = {
-    cwd: __dirname + '/videos'
-};
 
-const getVttList = async url =>
+const getVttList = url =>
     new Promise((resolve, reject) => {
         youtubedl.getSubs(url, vttOptions, (err, files) => {
             if (err) {
@@ -27,24 +24,12 @@ const getVttList = async url =>
         });
     });
 
-const getVideoFileName = async url =>
+const getVideoFileName = url =>
     new Promise((resolve, reject) => {
         youtubedl.getInfo(url, (err, info) => {
             if (err) reject(err);
-            const { display_id } = info;
-            const fileName = display_id + '.mp4';
-            const output = Path.join('videos', fileName);
-            if (fs.existsSync(output)) {
-                resolve(fileName);
-                return;
-            }
-
-            const video = youtubedl(url);
-            const writer = fs.createWriteStream(output);
-            video.pipe(writer);
-            video.on('end', () => {
-                resolve(fileName);
-            });
+            const { display_id, url: download_url } = info;
+            resolve([display_id, download_url]);
         });
     });
 

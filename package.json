@@ -28,7 +28,9 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "dev": "NODE_ENV=dev nodemon --watch server.js server.js"
+        "dev": "NODE_ENV=dev nodemon --watch server.js server.js",
+        "build": "parcel build index.html -d public",
+        "start": "node server.js"
     },
     "keywords": [],
     "author": "",

@@ -9,7 +9,7 @@
 -   npm install
 -   npm run build
 -   npm start
--   open http://localhost:8888
+-   open http://localhost:8080
 
 ## stacks
 

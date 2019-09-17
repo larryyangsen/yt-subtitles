@@ -8,15 +8,24 @@ const parseVideoUrl = window.location.origin + '/api/parse-video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
 const url = new URL(location.href);
 
-const VttSelector = ({ vttFiles, videoId, onVttChange }) => (
-    <select onChange={e => onVttChange(e)}>
+const splitVttName = (vtt, videoId) =>
+    vtt.split(videoId + '.')[1].replace('.vtt', '');
+
+const VttSelector = ({
+    vttFiles,
+    videoId,
+    defaultValue = vttFiles[0],
+    onVttChange
+}) => (
+    <select defaultValue={defaultValue} onChange={e => onVttChange(e)}>
         {vttFiles.map((vtt, i) => (
             <option key={i} value={vtt}>
-                {vtt.split(videoId + '.')[1].replace('.vtt', '')}
+                {splitVttName(vtt, videoId)}
             </option>
         ))}
     </select>
 );
+
 const Cues = ({ cues, onCueClick, side = 'left', curHighlightedIndex = -1 }) =>
     cues.map((cue, index) => (
         <div
@@ -55,12 +64,15 @@ const App = () => {
                 setVttFiles(vttFiles);
                 videoId.current = display_id;
                 const cues = await parseVtt(vttFiles[0]);
+                if (vttFiles.length > 1) {
+                    const rightCues = await parseVtt(vttFiles[1]);
+                    setRightCues(rightCues);
+                }
                 const params = url.searchParams;
                 params.set('id', display_id);
                 url.search = params;
                 history.pushState({}, '', url);
                 setLeftCues(cues);
-                setRightCues(cues);
             }
             Video.current.src = download_url;
         } catch (err) {
@@ -147,6 +159,7 @@ const App = () => {
                         />
                         <VttSelector
                             vttFiles={vttFiles}
+                            defaultValue={vttFiles[1]}
                             onVttChange={e => onVttChange(e, 'right')}
                             videoId={videoId.current}
                         />

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDom from 'react-dom';
-import { useLocation } from 'react-use';
 import axios from 'axios';
 import parseVtt from './parseVtt';
 import 'normalize.css';
 import './index.scss';
-const parseVideoUrl = window.location.origin + '/parse-video';
+const parseVideoUrl = window.location.origin + '/api/parse-video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
+const url = new URL(location.href);
 
 const VttSelector = ({ vttFiles, videoId, onVttChange }) => (
     <select onChange={e => onVttChange(e)}>
@@ -30,13 +30,11 @@ const Cues = ({ cues, onCueClick, side = 'left', curHighlightedIndex = -1 }) =>
     ));
 
 const App = () => {
-    const { pathname } = location;
+    const id = url.searchParams.get('id');
     const [vttFiles, setVttFiles] = useState([]);
     const [leftCues, setLeftCues] = useState([]);
     const [rightCues, setRightCues] = useState([]);
-    const [url, setUrl] = useState(
-        pathname !== '/' ? pathname.split('/')[1] : defaultUrl
-    );
+    const [ytUrl, setYtUrl] = useState(() => (id ? id : defaultUrl));
     const [error, setError] = useState(null);
     const videoId = useRef('');
     const Video = useRef();
@@ -51,13 +49,16 @@ const App = () => {
             const {
                 data: { display_id, download_url, vttFiles }
             } = await axios.post(parseVideoUrl, {
-                url
+                url: ytUrl
             });
             if (vttFiles.length) {
                 setVttFiles(vttFiles);
                 videoId.current = display_id;
                 const cues = await parseVtt(vttFiles[0]);
-                history.pushState({}, '', `${location.origin}/${display_id}`);
+                const params = url.searchParams;
+                params.set('id', display_id);
+                url.search = params;
+                history.pushState({}, '', url);
                 setLeftCues(cues);
                 setRightCues(cues);
             }
@@ -70,7 +71,7 @@ const App = () => {
 
     const onUrlChanged = e => {
         const url = e.target.value;
-        setUrl(url);
+        setYtUrl(url);
     };
     const onVttChange = async (e, leftOrRight = 'left') => {
         const vtt = e.target.value;
@@ -114,7 +115,7 @@ const App = () => {
         setLeftHighlightedIndex(-1);
         setRightHighlightedIndex(-1);
         parseVideo();
-    }, [url]);
+    }, [ytUrl]);
 
     useEffect(() => {
         if (Video.current && leftCues.length && rightCues.length) {
@@ -131,7 +132,7 @@ const App = () => {
     return (
         <div className="app">
             <header>
-                <input defaultValue={url} onBlur={onUrlChanged} />
+                <input defaultValue={ytUrl} onBlur={onUrlChanged} />
             </header>
             <div className="video">
                 <video ref={Video} controls autoPlay />

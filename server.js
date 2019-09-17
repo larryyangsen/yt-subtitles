@@ -6,6 +6,7 @@ const Path = require('path');
 const { getVttList, getVideoFileName } = require('./youtube');
 const isDev = process.env.NODE_ENV === 'dev';
 const app = express();
+const router = express.Router({ strict: true });
 app.use(bodyParser.json());
 
 if (!fs.existsSync('vtt')) {
@@ -15,7 +16,7 @@ if (!fs.existsSync('videos')) {
     fs.mkdirSync('./videos');
 }
 
-app.post('/parse-video', async (req, res) => {
+router.post('/parse-video', async (req, res) => {
     const { url = 'https://youtu.be/PizwcirYuGY' } = req.body;
     try {
         const vttFiles = await getVttList(url);
@@ -30,7 +31,7 @@ app.post('/parse-video', async (req, res) => {
     }
 });
 
-app.post('/vtt', (req, res) => {
+router.post('/vtt', (req, res) => {
     const { file } = req.body;
     if (!fs.existsSync(file)) {
         res.status(404).send(`file: ${file} is not found`);
@@ -40,12 +41,14 @@ app.post('/vtt', (req, res) => {
     });
     res.status(httpStatus.OK).send(vtt);
 });
+app.use('/api', router);
 
 if (isDev) {
     const Bundler = require('parcel-bundler');
     const entryFiles = Path.join(__dirname, './index.html');
     const bundler = new Bundler(entryFiles);
     app.use(bundler.middleware());
+
     app.listen(1234, err => {
         if (err) {
             console.error(err);

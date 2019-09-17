@@ -2,7 +2,7 @@ import vtt from 'vtt.js';
 import axios from 'axios';
 
 const { WebVTT } = vtt;
-const vttUrl = window.location.origin + '/vtt';
+const vttUrl = window.location.origin + '/api/vtt';
 
 const parseVtt = async file => {
     const { data: vtt } = await axios.post(vttUrl, { file });

@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ReactDom from 'react-dom';
+import { useLocation } from 'react-use';
 import axios from 'axios';
 import parseVtt from './parseVtt';
 import 'normalize.css';
 import './index.scss';
 const parseVideoUrl = window.location.origin + '/parse-video';
-const videoUrl = window.location.origin + '/video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
 
 const VttSelector = ({ vttFiles, videoId, onVttChange }) => (
@@ -30,10 +30,14 @@ const Cues = ({ cues, onCueClick, side = 'left', curHighlightedIndex = -1 }) =>
     ));
 
 const App = () => {
+    const { pathname } = location;
     const [vttFiles, setVttFiles] = useState([]);
     const [leftCues, setLeftCues] = useState([]);
     const [rightCues, setRightCues] = useState([]);
-    const [url, setUrl] = useState(defaultUrl);
+    const [url, setUrl] = useState(
+        pathname !== '/' ? pathname.split('/')[1] : defaultUrl
+    );
+    const [error, setError] = useState(null);
     const videoId = useRef('');
     const Video = useRef();
     const [leftHighlightedIndex, setLeftHighlightedIndex] = useState(-1);
@@ -43,20 +47,25 @@ const App = () => {
         Video.current.src = '';
 
         videoId.current = '';
-        const {
-            data: { display_id, download_url, vttFiles }
-        } = await axios.post(parseVideoUrl, {
-            url
-        });
-        if (vttFiles.length) {
-            setVttFiles(vttFiles);
-            videoId.current = display_id;
-            const cues = await parseVtt(vttFiles[0]);
-
-            setLeftCues(cues);
-            setRightCues(cues);
+        try {
+            const {
+                data: { display_id, download_url, vttFiles }
+            } = await axios.post(parseVideoUrl, {
+                url
+            });
+            if (vttFiles.length) {
+                setVttFiles(vttFiles);
+                videoId.current = display_id;
+                const cues = await parseVtt(vttFiles[0]);
+                history.pushState({}, '', `${location.origin}/${display_id}`);
+                setLeftCues(cues);
+                setRightCues(cues);
+            }
+            Video.current.src = download_url;
+        } catch (err) {
+            console.error(err);
+            setError(err);
         }
-        Video.current.src = download_url;
     };
 
     const onUrlChanged = e => {
@@ -116,7 +125,9 @@ const App = () => {
             };
         }
     }, [leftCues, rightCues]);
-
+    if (error) {
+        return <div className="error">{error.toString()}</div>;
+    }
     return (
         <div className="app">
             <header>

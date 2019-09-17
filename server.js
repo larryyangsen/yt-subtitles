@@ -26,7 +26,7 @@ app.post('/parse-video', async (req, res) => {
             download_url
         });
     } catch (e) {
-        res.status(httpStatus.INSUFFICIENT_STORAGE).send(e);
+        res.status(httpStatus.INTERNAL_SERVER_ERROR).send(e);
     }
 });
 

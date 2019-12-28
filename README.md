@@ -3,6 +3,7 @@
 ## Watch two different subtitles in the same time , if exist two or many subtitles
 
 ![screen](./screen.png)
+![screen](./screen2.png)
 
 ## How to run
 

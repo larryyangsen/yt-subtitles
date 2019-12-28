@@ -13,7 +13,7 @@ import './index.scss';
 const parseVideoUrl = window.location.origin + '/api/parse-video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
 const url = new URL(location.href);
-const defaultLang = navigator.language.toUpperCase();
+const defaultLang = navigator.language;
 
 const App = () => {
     const id = url.searchParams.get('id');
@@ -38,7 +38,7 @@ const App = () => {
                     key={key}
                     srcLang={key}
                     src={url}
-                    default={key.toLocaleUpperCase().indexOf(defaultLang) > -1}
+                    default={key === defaultLang}
                 />
             );
         });
@@ -57,11 +57,7 @@ const App = () => {
                             onChange={() => onVttChange(i)}
                             value={i}
                             type="checkbox"
-                            defaultChecked={
-                                track.key
-                                    .toLocaleUpperCase()
-                                    .indexOf(defaultLang) > -1
-                            }
+                            defaultChecked={track.key === defaultLang}
                         />
                         {track.props.srcLang}
                     </label>
@@ -69,11 +65,12 @@ const App = () => {
             </div>
         );
     }, [tracks]);
-    const [ytUrl, setYtUrl] = useState(() => (id ? id : defaultUrl));
+    const [ytUrl, setYtUrl] = useState(() => id ?? '');
     const [error, setError] = useState(null);
     const Video = useRef();
 
     const parseVideo = useCallback(async () => {
+        if (!ytUrl) return;
         Video.current.src = '';
         try {
             const {

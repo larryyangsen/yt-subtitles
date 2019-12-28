@@ -1,143 +1,112 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, {
+    useEffect,
+    useState,
+    useCallback,
+    useMemo,
+    useRef
+} from 'react';
 import ReactDom from 'react-dom';
 import axios from 'axios';
-import parseVtt from './parseVtt';
+import { extractVtt, splitVttName } from './parseVtt';
 import 'normalize.css';
 import './index.scss';
 const parseVideoUrl = window.location.origin + '/api/parse-video';
 const defaultUrl = 'https://www.youtube.com/watch?v=clU8c2fpk2s';
 const url = new URL(location.href);
-
-const splitVttName = (vtt, videoId) =>
-    vtt.split(videoId + '.')[1].replace('.vtt', '');
-
-const VttSelector = ({
-    vttFiles,
-    videoId,
-    defaultValue = vttFiles[0],
-    onVttChange
-}) => (
-    <select defaultValue={defaultValue} onChange={e => onVttChange(e)}>
-        {vttFiles.map((vtt, i) => (
-            <option key={i} value={vtt}>
-                {splitVttName(vtt, videoId)}
-            </option>
-        ))}
-    </select>
-);
-
-const Cues = ({ cues, onCueClick, side = 'left', curHighlightedIndex = -1 }) =>
-    cues.map((cue, index) => (
-        <div
-            className={curHighlightedIndex === index ? 'cue highlight' : 'cue'}
-            onClick={() => onCueClick(cue)}
-            key={cue.startTime}
-            id={side + cue.startTime}
-        >
-            {cue.text}
-        </div>
-    ));
+const defaultLang = navigator.language.toUpperCase();
 
 const App = () => {
     const id = url.searchParams.get('id');
-    const [vttFiles, setVttFiles] = useState([]);
-    const [leftCues, setLeftCues] = useState([]);
-    const [rightCues, setRightCues] = useState([]);
+    const [vttMap, setVttMap] = useState(new Map());
+    const [displayId, setDisplayId] = useState('');
+    const [selectedVtts, setSelectedVtts] = useState([]);
+    const onVttChange = index => {
+        Video.current.textTracks[index].mode === 'showing'
+            ? (Video.current.textTracks[index].mode = 'disabled')
+            : (Video.current.textTracks[index].mode = 'showing');
+        console.log(index);
+    };
+    const tracks = useMemo(() => {
+        if (!vttMap.size) {
+            return [<track key="0" />];
+        }
+        const tracks = [];
+        vttMap.forEach((vtt, key = '') => {
+            const url = window.URL.createObjectURL(new Blob([vtt]));
+            tracks.push(
+                <track
+                    key={key}
+                    srcLang={key}
+                    src={url}
+                    default={key.toLocaleUpperCase().indexOf(defaultLang) > -1}
+                />
+            );
+        });
+        return tracks;
+    }, [vttMap]);
+
+    const VttSelector = useMemo(() => {
+        if (tracks.length === 1) {
+            return <div />;
+        }
+        return (
+            <div className="vtt-selector">
+                {tracks.map((track, i) => (
+                    <label key={i}>
+                        <input
+                            onChange={() => onVttChange(i)}
+                            value={i}
+                            type="checkbox"
+                            defaultChecked={
+                                track.key
+                                    .toLocaleUpperCase()
+                                    .indexOf(defaultLang) > -1
+                            }
+                        />
+                        {track.props.srcLang}
+                    </label>
+                ))}
+            </div>
+        );
+    }, [tracks]);
     const [ytUrl, setYtUrl] = useState(() => (id ? id : defaultUrl));
     const [error, setError] = useState(null);
-    const videoId = useRef('');
     const Video = useRef();
-    const [leftHighlightedIndex, setLeftHighlightedIndex] = useState(-1);
-    const [rightHighlightedIndex, setRightHighlightedIndex] = useState(-1);
-    const preLeftCues = useRef(leftCues);
-    const parseVideo = async () => {
-        Video.current.src = '';
 
-        videoId.current = '';
+    const parseVideo = useCallback(async () => {
+        Video.current.src = '';
         try {
             const {
                 data: { display_id, download_url, vttFiles }
             } = await axios.post(parseVideoUrl, {
                 url: ytUrl
             });
+            setDisplayId(display_id);
             if (vttFiles.length) {
-                setVttFiles(vttFiles);
-                videoId.current = display_id;
-                const cues = await parseVtt(vttFiles[0]);
-                if (vttFiles.length > 1) {
-                    const rightCues = await parseVtt(vttFiles[1]);
-                    setRightCues(rightCues);
-                }
+                const vttMap = await extractVtt(vttFiles, display_id);
+                setVttMap(vttMap);
                 const params = url.searchParams;
                 params.set('id', display_id);
                 url.search = params;
                 history.pushState({}, '', url);
-                setLeftCues(cues);
             }
             Video.current.src = download_url;
         } catch (err) {
-            console.error(err);
+            console.error(err.response);
             setError(err);
         }
-    };
+    }, [ytUrl]);
 
     const onUrlChanged = e => {
         const url = e.target.value;
-        setYtUrl(url);
-    };
-    const onVttChange = async (e, leftOrRight = 'left') => {
-        const vtt = e.target.value;
-        const cues = await parseVtt(vtt);
-        if (leftOrRight === 'left') {
-            setLeftCues([]);
-            setLeftCues(cues);
-        } else {
-            setRightCues([]);
-            setRightCues(cues);
-        }
-        highlightCues(cues);
-    };
-    const onCueClick = cue => {
-        Video.current.currentTime = cue.startTime;
+        if (url) setYtUrl(url);
     };
 
-    const highlightCues = (curCues, side = 'left') => {
-        const highlightedIndex = curCues.reduce((index, cue, curIndex) => {
-            if (Video.current.currentTime >= cue.startTime) {
-                return curIndex;
-            }
-            return index;
-        }, -1);
-        if (highlightedIndex === -1) return;
-        const cue = document.getElementById(
-            side + curCues[highlightedIndex].startTime
-        );
-
-        cue.scrollIntoView();
-        if (side === 'left') {
-            setLeftHighlightedIndex(highlightedIndex);
-        } else {
-            setRightHighlightedIndex(highlightedIndex);
-        }
-    };
     useEffect(() => {
-        setVttFiles([]);
-        setLeftCues([]);
-        setRightCues([]);
-        setLeftHighlightedIndex(-1);
-        setRightHighlightedIndex(-1);
+        setVttMap(new Map());
         parseVideo();
     }, [ytUrl]);
 
-    useEffect(() => {
-        if (Video.current && leftCues.length && rightCues.length) {
-            preLeftCues.current = leftCues;
-            Video.current.ontimeupdate = () => {
-                highlightCues(leftCues, 'left');
-                highlightCues(rightCues, 'right');
-            };
-        }
-    }, [leftCues, rightCues]);
     if (error) {
         return <div className="error">{error.toString()}</div>;
     }
@@ -146,48 +115,13 @@ const App = () => {
             <header>
                 <input defaultValue={ytUrl} onBlur={onUrlChanged} />
             </header>
-            <div className="video">
-                <video ref={Video} controls autoPlay />
-            </div>
-            <div className="subtitles">
-                {vttFiles.length > 1 && videoId.current && (
-                    <div className="vtt-selector">
-                        <VttSelector
-                            vttFiles={vttFiles}
-                            onVttChange={e => onVttChange(e, 'left')}
-                            videoId={videoId.current}
-                        />
-                        <VttSelector
-                            vttFiles={vttFiles}
-                            defaultValue={vttFiles[1]}
-                            onVttChange={e => onVttChange(e, 'right')}
-                            videoId={videoId.current}
-                        />
-                    </div>
-                )}
-                <div className="vtts">
-                    <div className="vtt">
-                        <Cues
-                            curHighlightedIndex={leftHighlightedIndex}
-                            cues={leftCues}
-                            onCueClick={onCueClick}
-                            side="left"
-                        />
-                    </div>
-                    {vttFiles.length > 1 && (
-                        <div className="vtt">
-                            <Cues
-                                curHighlightedIndex={rightHighlightedIndex}
-                                cues={rightCues}
-                                onCueClick={onCueClick}
-                                side="right"
-                            />
-                        </div>
-                    )}
-                </div>
-            </div>
+            <video ref={Video} controls autoPlay>
+                {tracks}
+            </video>
+            {VttSelector}
         </div>
     );
 };
+document.createElement;
 
-ReactDom.render(<App />, document.getElementById('App'));
+ReactDom.render(<App />, document.body);

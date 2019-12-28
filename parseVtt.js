@@ -24,3 +24,20 @@ const parseVtt = async file => {
 };
 
 export default parseVtt;
+
+export const splitVttLang = (vtt, videoId) =>
+    vtt.split(videoId + '.')[1].replace('.vtt', '');
+
+export const extractVtt = async (vttFiles = [], videoId = '') => {
+    const vttMap = new Map();
+    for (const file of vttFiles) {
+        const lang = splitVttLang(file, videoId);
+        const { data } = await axios.post(vttUrl, { file });
+        vttMap.set(lang, data);
+    }
+    return vttMap;
+};
+
+export const mergeVtt = (...locales) => {
+    if (locales.length > 3) throw new Error('locale file max 3');
+};

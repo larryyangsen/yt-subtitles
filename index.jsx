@@ -119,6 +119,5 @@ const App = () => {
         </div>
     );
 };
-document.createElement;
 
 ReactDom.render(<App />, document.body);

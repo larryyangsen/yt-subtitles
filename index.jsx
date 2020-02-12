@@ -18,6 +18,7 @@ const defaultLang = navigator.language;
 const App = () => {
     const id = url.searchParams.get('id');
     const [vttMap, setVttMap] = useState(new Map());
+    const [playInPip, setPlayInPip] = useState(false);
     const [displayId, setDisplayId] = useState('');
     const [selectedVtts, setSelectedVtts] = useState([]);
     const onVttChange = index => {
@@ -98,10 +99,22 @@ const App = () => {
         const url = e.target.value;
         if (url) setYtUrl(url);
     };
+    const onPlayPipChange = useCallback(async () => {
+        if (Video.current.readyState === 0) return;
+        if (playInPip) {
+            await document.exitPictureInPicture();
+        } else {
+            await Video.current.requestPictureInPicture();
+        }
+        setPlayInPip(!playInPip);
+    }, [playInPip]);
 
     useEffect(() => {
         setVttMap(new Map());
         parseVideo();
+        Video.current.addEventListener('leavepictureinpicture', event => {
+            setPlayInPip(false);
+        });
     }, [ytUrl]);
 
     if (error) {
@@ -115,6 +128,7 @@ const App = () => {
             <video ref={Video} controls autoPlay>
                 {tracks}
             </video>
+            <button onClick={onPlayPipChange}>toggle pip</button>
             {VttSelector}
         </div>
     );
